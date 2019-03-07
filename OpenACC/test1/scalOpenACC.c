@@ -37,22 +37,33 @@ int main(int argc, char** argv)
         v_A[i]=i;
     }
 
-//referencia
+    //referencia
     for (i = 0; i < n; i++){
         v_CH[i] = v_A[i] * alpha;
-  }
+    }
 
     //Calculo de tiempo
-
     gettimeofday(&start, NULL);
 
+    //////////////////////////////////////////////////////////////////
+    // Este es el cÃodigo que se ejecutara¡ en la GPU. Para ello, 
+    // 1. debemos identificar los datos que se utilizan. Â¿Cuales son 
+    // de entrada?Â¿Y de salida?
+    // 2. Poner pragmas de datos
+    // 3. Identificar el codigo paralelo
+    // 4. Poner pragmas de kernels
     //Debemos mover los datos
+    
+    //pragma acc...
     {
-    //bucle for
-    for (i = 0; i < n; i++){
-        v_A[i] = alpha * v_A[i];
+        //bucle for
+        //pragma acc...
+        for (i = 0; i < n; i++){
+            v_A[i] = alpha * v_A[i];
+        }
     }
-    }  
+    /////////////////////////////////////////////////////////////////
+  
     gettimeofday(&end, NULL);
     
     
