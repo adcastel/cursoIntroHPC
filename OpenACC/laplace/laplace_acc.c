@@ -26,8 +26,8 @@
 #include <sys/time.h>
 
 // size of plate
-#define COLUMNS    1000
-#define ROWS       1000
+#define COLUMNS    10000
+#define ROWS       10000
 
 // largest permitted change in temp (This value takes about 3400 steps)
 #define MAX_TEMP_ERROR 0.01
@@ -38,7 +38,7 @@ double Temperature_last[ROWS+2][COLUMNS+2]; // temperature grid from last iterat
 //   helper routines
 void initialize();
 void track_progress(int iter);
-
+void show_check();
 
 int main(int argc, char *argv[]) {
 
@@ -88,11 +88,19 @@ int main(int argc, char *argv[]) {
         }
 
 	iteration++;
+        
     }
 
     gettimeofday(&stop_time,NULL);
-    timersub(&stop_time, &start_time, &elapsed_time); // Unix time subtract routine
+    
+    
+    if (dt <= MAX_TEMP_ERROR){
+        #pragma acc update host(Temperature)
+        show_check();
+    }
 
+    timersub(&stop_time, &start_time, &elapsed_time); // Unix time subtract routine
+    //printf("Temperature [7500,9950] position is %f\n", Temperature[750,995]);
     printf("\nMax error at iteration %d was %f\n", iteration-1, dt);
     printf("Total time was %f seconds.\n", elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0);
 
@@ -137,4 +145,8 @@ void track_progress(int iteration) {
         printf("[%d,%d]: %5.2f  ", i, i, Temperature[i][i]);
     }
     printf("\n");
+}
+
+void show_check(){
+    printf("Temperature [7500,9950] position is %f\n", Temperature[7500,9950]);
 }
