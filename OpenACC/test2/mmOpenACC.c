@@ -8,7 +8,7 @@
 //#include <openacc.h>
 
 #define TOL 1e-14
-
+#define N 512
 
 /* Main */
 int main(int argc, char** argv)
@@ -20,36 +20,30 @@ int main(int argc, char** argv)
     int k = 0;
     double alpha = 1.0;
     double beta = 1.0;
-    int n = 1024;
     struct timeval start, end;
     double time;
 
-    if( argc > 1)
-    	n=(256 < atoi(argv[1]))?atoi(argv[1]): 256;
-
     
-    double *mm_A = (double *)malloc(n*n*sizeof(double));
-    double *mm_B = (double *)malloc(n*n*sizeof(double));
-    double *mm_C = (double *)malloc(n*n*sizeof(double));
-    double *mm_CH = (double *)malloc(n*n*sizeof(double));
+    double mm_A[N][N] ;
+    double mm_B[N][N] ;
+    double mm_C[N][N] ;
+    double mm_CH[N][N] ;
      
-    if (mm_A==NULL || mm_B == NULL || mm_C==NULL || mm_CH == NULL){
-        printf("Malloc error\n");
-        return 1;
-    }
     
     //Inicializacion
-    for(i=0;i<n*n;i++){
-        mm_A[i]=mm_B[i]=i;
-	mm_C[i]=mm_CH[i]=0.0;
+    for(i=0;i<N;i++){
+        for(j=0;j<N;j++){
+            mm_A[i][j]=mm_B[i][j]=i;
+	    mm_C[i][j]=mm_CH[i][j]=0.0;
+        }
     }
-    if(n <= 1024){
+    if(N <= 512){
         //referencia
-        for (i = 0; i < n; i++){
-            for (j = 0; j < n; j++){
-                mm_CH[i*n+j] *= beta;
-                for (k = 0; k < n; k++){
-                    mm_CH[i*n+j] += alpha * mm_A[i*n+k] * mm_B[k*n+j];
+        for (i = 0; i < N; i++){
+            for (j = 0; j < N; j++){
+                mm_CH[i][j] *= beta;
+                for (k = 0; k < N; k++){
+                    mm_CH[i][j] += alpha * mm_A[i][k] * mm_B[k][j];
                 }
             }
         }
@@ -65,14 +59,14 @@ int main(int argc, char** argv)
     // 2. Poner pragmas de datos
     // 3. Identificar el codigo paralelo
     // 4. Poner pragmas de kernels y/o loops
-    // 5. ¿son bucles independiente?
+    // 5. ¿son bucles independiente? Si lo son y el compilador dice que no...
     //Debemos mover los datos
 
-    for (i = 0; i < n; i++){
-        for (j = 0; j < n; j++){
-            mm_C[i*n+j] *= beta;
-            for (k = 0; k < n; k++){
-                mm_C[i*n+j] += alpha * mm_A[i*n+k] * mm_B[k*n+j];
+    for (i = 0; i < N; i++){
+        for (j = 0; j < N; j++){
+            mm_C[i][j] *= beta;
+            for (k = 0; k < N; k++){
+                mm_C[i][j] += alpha * mm_A[i][k] * mm_B[k][j];
 	    }
          }
     }
@@ -80,10 +74,10 @@ int main(int argc, char** argv)
 
     gettimeofday(&end, NULL);
     
-    if (n <= 1024){
-        for (i = 0; i < n; i++){
-            for (j = 0; j < n; j++){
-                if (fabs(mm_CH[i*n+j] - mm_C[i*n+j]) > TOL){
+    if (N <= 512){
+        for (i = 0; i < N; i++){
+            for (j = 0; j < N; j++){
+                if (fabs(mm_CH[i][j] - mm_C[i][j]) > TOL){
                     flag = 1;
                 }
             }
@@ -91,17 +85,12 @@ int main(int argc, char** argv)
     }
 
     
-    free(mm_A);
-    free(mm_B);
-    free(mm_C);
-    free(mm_CH);
-    
     if(flag){
         printf("Falg detected\n");
         return 1;
     }
     time = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-    double gflops = (((2.0*n*n*n) / time )/(1024.0*1024.0*1024.0));
-    printf("OpenACC %d %f %f GFLOPS\n",n, time, gflops );
+    double gflops = (((2.0*N*N*N) / time )/(1024.0*1024.0*1024.0));
+    printf("OpenACC %d %f %f GFLOPS\n",N, time, gflops );
     return EXIT_SUCCESS;
 }

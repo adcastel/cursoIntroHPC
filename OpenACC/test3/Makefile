@@ -1,10 +1,10 @@
 OPT=-fast
-ACC=-acc -ta=nvidia:cc20
+ACC=-acc 
 CUDA_VERSION_PATH=/state/partition1/soft/cuda-8.0/
 OPENACC_COMPILER=pgcc
 
 
-FILE=mmOpenACC
+FILE=while
 
 all: $(FILE) 
 

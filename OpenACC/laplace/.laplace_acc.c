@@ -26,8 +26,8 @@
 #include <sys/time.h>
 
 // size of plate
-#define COLUMNS    4000
-#define ROWS       4000
+#define COLUMNS    10000
+#define ROWS       10000
 
 // largest permitted change in temp (This value takes about 3400 steps)
 #define MAX_TEMP_ERROR 0.01
@@ -48,6 +48,8 @@ int main(int argc, char *argv[]) {
     double dt=100;                                       // largest change in t
     struct timeval start_time, stop_time, elapsed_time;  // timers
 
+    //    printf("Maximum iterations [100-4000]?\n");
+    //    scanf("%d", &max_iterations);
     max_iterations = 4000;
     printf("Maximum iterations = %d\n", max_iterations);
 
@@ -56,13 +58,11 @@ int main(int argc, char *argv[]) {
     initialize();                   // initialize Temp_last including boundary conditions
 
     // do until error is minimal or until max steps
-    // Habiamos visto algo similar? un bucle while?
-    // ///////////////////////////
+    #pragma acc data copy(Temperature_last), create(Temperature)
     while ( dt > MAX_TEMP_ERROR && iteration <= max_iterations ) {
 
         // main calculation: average my four neighbors
-        // Un bucle for por aqui suelto
-        // /////////////////////////
+        #pragma acc kernels
         for(i = 1; i <= ROWS; i++) {
             for(j = 1; j <= COLUMNS; j++) {
                 Temperature[i][j] = 0.25 * (Temperature_last[i+1][j] + Temperature_last[i-1][j] +
@@ -73,8 +73,7 @@ int main(int argc, char *argv[]) {
         dt = 0.0; // reset largest temperature change
 
         // copy grid to old grid for next iteration and find latest dt
-        // Otro bucle for?
-        // ///////////////////////////////
+        #pragma acc kernels
         for(i = 1; i <= ROWS; i++){
             for(j = 1; j <= COLUMNS; j++){
 	      dt = fmax( fabs(Temperature[i][j]-Temperature_last[i][j]), dt);
@@ -84,10 +83,7 @@ int main(int argc, char *argv[]) {
 
         // periodically print test values
         if((iteration % 100) == 0) {
-	    ////////////////////////////////
-	    // Actualizamos? 
-	    // pero ojo que aqui no es solo un valor
-	    // ////////////////////////////
+            #pragma acc update host(Temperature)
  	    track_progress(iteration);
         }
 
@@ -99,13 +95,12 @@ int main(int argc, char *argv[]) {
     
     
     if (dt <= MAX_TEMP_ERROR){
-        /////////////////////////////////////
-        // Aqui deberiamos actualizar tambien...
-        // ///////////////////////////////////
+        #pragma acc update host(Temperature)
         show_check();
     }
 
     timersub(&stop_time, &start_time, &elapsed_time); // Unix time subtract routine
+    //printf("Temperature [7500,9950] position is %f\n", Temperature[750,995]);
     printf("\nMax error at iteration %d was %f\n", iteration-1, dt);
     printf("Total time was %f seconds.\n", elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0);
 
