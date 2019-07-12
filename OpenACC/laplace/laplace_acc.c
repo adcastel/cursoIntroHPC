@@ -26,8 +26,8 @@
 #include <sys/time.h>
 
 // size of plate
-#define COLUMNS    4000
-#define ROWS       4000
+#define COLUMNS    8000
+#define ROWS       8000
 
 // largest permitted change in temp (This value takes about 3400 steps)
 #define MAX_TEMP_ERROR 0.01
@@ -58,11 +58,14 @@ int main(int argc, char *argv[]) {
     // do until error is minimal or until max steps
     // Habiamos visto algo similar? un bucle while?
     // ///////////////////////////
+    #pragma acc data copy(Temperature_last), create(Temperature)
+
     while ( dt > MAX_TEMP_ERROR && iteration <= max_iterations ) {
 
         // main calculation: average my four neighbors
         // Un bucle for por aqui suelto
         // /////////////////////////
+        #pragma acc kernels
         for(i = 1; i <= ROWS; i++) {
             for(j = 1; j <= COLUMNS; j++) {
                 Temperature[i][j] = 0.25 * (Temperature_last[i+1][j] + Temperature_last[i-1][j] +
@@ -75,6 +78,7 @@ int main(int argc, char *argv[]) {
         // copy grid to old grid for next iteration and find latest dt
         // Otro bucle for?
         // ///////////////////////////////
+        #pragma acc kernels
         for(i = 1; i <= ROWS; i++){
             for(j = 1; j <= COLUMNS; j++){
 	      dt = fmax( fabs(Temperature[i][j]-Temperature_last[i][j]), dt);
@@ -88,7 +92,8 @@ int main(int argc, char *argv[]) {
 	    // Actualizamos? 
 	    // pero ojo que aqui no es solo un valor
 	    // ////////////////////////////
- 	    track_progress(iteration);
+            #pragma acc update host(Temperature)
+            track_progress(iteration);
         }
 
 	iteration++;

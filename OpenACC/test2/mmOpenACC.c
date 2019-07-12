@@ -8,7 +8,7 @@
 //#include <openacc.h>
 
 #define TOL 1e-14
-#define N 512
+#define N 1024
 
 /* Main */
 int main(int argc, char** argv)
@@ -37,8 +37,9 @@ int main(int argc, char** argv)
 	    mm_C[i][j]=mm_CH[i][j]=0.0;
         }
     }
-    if(N <= 512){
+    if(N <= 1024){
         //referencia
+    gettimeofday(&start, NULL);
         for (i = 0; i < N; i++){
             for (j = 0; j < N; j++){
                 mm_CH[i][j] *= beta;
@@ -48,6 +49,9 @@ int main(int argc, char** argv)
             }
         }
     }
+    gettimeofday(&end, NULL);
+
+    double time_sec = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
     //Calculo de tiempo
 
     gettimeofday(&start, NULL);
@@ -61,8 +65,10 @@ int main(int argc, char** argv)
     // 4. Poner pragmas de kernels y/o loops
     // 5. ¿son bucles independiente? Si lo son y el compilador dice que no...
     //Debemos mover los datos
-
+    #pragma acc data copyin(mm_A[0:N*N],mm_B[0:N*N]) copyout (mm_C[0:N*N])
+    #pragma acc kernels
     for (i = 0; i < N; i++){
+    //    #pragma acc loop independent
         for (j = 0; j < N; j++){
             mm_C[i][j] *= beta;
             for (k = 0; k < N; k++){
@@ -90,7 +96,8 @@ int main(int argc, char** argv)
         return 1;
     }
     time = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-    double gflops = (((2.0*N*N*N) / time )/(1024.0*1024.0*1024.0));
+    double gflops = (((2.0*N*N*N) / time )/(10000000));
     printf("OpenACC %d %f %f GFLOPS\n",N, time, gflops );
+    printf("Secuencial %f OpenACC %f Speed-up %f\n",time_sec, time, time_sec/time );
     return EXIT_SUCCESS;
 }

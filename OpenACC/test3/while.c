@@ -41,11 +41,13 @@ int main(int argc, char** argv)
     // ;)... Aqui tenemos la opción de copiar o crear 
     // la matriz que se llama GPU y la otra, pues como siempre
     // ////////////////////////////////////////
+  #pragma acc data copyin(mm_A[0:N]) create(mm_A_gpu[0:N])
   while(iterations < 10 && aux > 0.02){
 
     ////////////////////////////////////////////
     //Este codigo se parece a los anteriores... ;) ;)
     ///////////////////////////////////////////
+    #pragma acc kernels
     for (i = 0; i < N; i++){
 	  mm_A_gpu[i]=mm_A[i]/2.0;
 	  mm_A[i]/=2.0f;
@@ -56,6 +58,7 @@ int main(int argc, char** argv)
     //Y esta es la clave, necesitamos actualizar un dato
     //en la CPU desde la memoria de la GPU... Actualizamos?
     /////////////////////////////////////////////
+    #pragma acc data update host(mm_A_gpu[N-1])
     aux = mm_A_gpu[N-1];
     printf("Iteration %d | value %f\n",iterations++,aux);
     

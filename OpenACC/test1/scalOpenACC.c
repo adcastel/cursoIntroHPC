@@ -8,7 +8,7 @@
 #include <openacc.h>
 
 #define TOL 1e-14
-#define N 1024
+#define N 1000000
 
 /* Main */
 int main(int argc, char** argv)
@@ -31,10 +31,14 @@ int main(int argc, char** argv)
     }
 
     //referencia
+    gettimeofday(&start, NULL);
     for (i = 0; i < N; i++){
         v_CH[i] = v_A[i] * alpha;
     }
+    gettimeofday(&end, NULL);
 
+    double time_sec = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+    
     //Calculo de tiempo
     gettimeofday(&start, NULL);
 
@@ -47,10 +51,10 @@ int main(int argc, char** argv)
     // 4. Poner pragmas de kernels
     //Debemos mover los datos
     
-    //pragma acc...
+    #pragma acc data copy(v_A[0:N])
     {
         //bucle for
-        //pragma acc...
+        #pragma acc kernels
         for (i = 0; i < N; i++){
             v_A[i] = alpha * v_A[i];
         }
@@ -73,7 +77,8 @@ int main(int argc, char** argv)
         return 1;
     }
     time = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-    double gflops = (((N) / time )/(1024.0*1024.0*1024.0));
+    double gflops = ((N*1.0f / time )/(1000000000.0));
     printf("OpenACC %d %f %f GFLOPS\n",N, time, gflops );
+    printf("Secuencial %f OpenACC %f Speed-up %f\n",time_sec, time, time_sec/time );
     return EXIT_SUCCESS;
 }
